@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PostCard } from "./PostCard";
 
 export type BlogPost = {
   href: string;
@@ -28,17 +29,17 @@ export function BlogList({ featured, cards }: { featured: BlogPost; cards: BlogP
       </Link>
       <div className="posts">
         {cards.map((p) => (
-          <Link className="post-card" key={p.href} href={p.href} data-cat={p.dataCat}>
-            <div className="media grid-bg" data-c={p.dataC} data-src="" data-alt={p.title}>
-              <span className="slot">Add a cover image</span>
-            </div>
-            <div className="row-meta">
-              <span className={`tag ${p.tagClass}`}>{p.tag}</span>
-              <span>{p.readTime}</span>
-            </div>
-            <h3>{p.title}</h3>
-            <p>{p.desc}</p>
-          </Link>
+          <PostCard
+            key={p.href}
+            href={p.href}
+            dataCat={p.dataCat}
+            dataC={p.dataC}
+            tag={p.tag}
+            tagClass={p.tagClass}
+            readTime={p.readTime ?? ""}
+            title={p.title}
+            desc={p.desc}
+          />
         ))}
       </div>
     </div>
