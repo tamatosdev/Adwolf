@@ -17,7 +17,13 @@ const ORDER = ["ai", "code", "d2", "d3"];
 const PAL: [number, number, number][] = [[255, 111, 181], [255, 181, 71], [140, 140, 255], [63, 224, 197]];
 const GLYPHS = "{}<>/=;()[]01$#*+:".split("");
 
-export function WolfCanvas({ onModeChange }: { onModeChange?: (mode: string) => void }) {
+type WolfCanvasProps = {
+  mode?: string;
+  onModeChange?: (mode: string) => void;
+  setModeRef?: { current: ((mode: string) => void) | null };
+};
+
+export function WolfCanvas({ mode: modeProp, onModeChange, setModeRef }: WolfCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<{
     N: number;
@@ -30,7 +36,10 @@ export function WolfCanvas({ onModeChange }: { onModeChange?: (mode: string) => 
     cells: number[];
     glyphs: string[];
     W: number; H: number; dpr: number; sc: number; cx: number; cy: number;
-    mode: string; modeStart: number; paused: number; boil: number; lastBoil: number; lastStep: number;
+    ctrl: { mode: string; modeStart: number; paused: number };
+    setMode: (m: string, byUser?: boolean) => void;
+    getMode: () => string;
+    boil: number; lastBoil: number; lastStep: number;
     mx: number; my: number; tiltX: number; tiltY: number;
     visible: boolean;
     animId: number;
@@ -44,6 +53,7 @@ export function WolfCanvas({ onModeChange }: { onModeChange?: (mode: string) => 
     if (!ctx) return;
 
     const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const metaEl = document.getElementById("modeMeta");
 
     function rasterize(draw: (g: CanvasRenderingContext2D) => void) {
       const c = document.createElement("canvas");
@@ -153,47 +163,56 @@ export function WolfCanvas({ onModeChange }: { onModeChange?: (mode: string) => 
       cx = W / 2; cy = Hh / 2;
     }
 
-    let mode = "ai", modeStart = 0, paused = 0, boil = 0, lastBoil = 0, lastStep = 0;
+    const ctrl = { mode: "ai", modeStart: 0, paused: 0 };
+    let boil = 0, lastBoil = 0, lastStep = 0;
     let mx = -9999, my = -9999, tiltX = 0, tiltY = 0;
     let visible = true;
     const observer = new IntersectionObserver(([e]) => { visible = e.isIntersecting; });
     observer.observe(canvas);
 
     function setMode(m: string, byUser?: boolean) {
-      mode = m; modeStart = performance.now();
-      if (byUser) paused = modeStart + 15000;
+      ctrl.mode = m;
+      ctrl.modeStart = performance.now();
+      if (byUser) ctrl.paused = ctrl.modeStart + 15000;
       onModeChange?.(m);
     }
+    if (setModeRef) setModeRef.current = (m: string) => setMode(m, true);
 
     function frame(now: number) {
       const animId = requestAnimationFrame(frame);
       stateRef.current!.animId = animId;
       if (!visible) return;
-      const el = now - modeStart;
-      if (!REDUCE && now > paused && el > MODES[mode].dur) setMode(ORDER[(ORDER.indexOf(mode) + 1) % ORDER.length]);
+      const el = now - ctrl.modeStart;
+      if (!REDUCE && now > ctrl.paused && el > MODES[ctrl.mode].dur) setMode(ORDER[(ORDER.indexOf(ctrl.mode) + 1) % ORDER.length]);
 
       ctx!.clearRect(0, 0, W, Hh);
       const u = sc;
       let aiAmp = 0;
-      if (mode === "ai") {
+      if (ctrl.mode === "ai") {
         const p = Math.min(1, el / 2600);
         aiAmp = REDUCE ? 0 : 120 * Math.pow(1 - p, 2.2) + 0.6;
         if (now - lastStep > 85) { lastStep = now; for (let i = 0; i < N; i++) { P.nx[i] = (rnd() - .5) * 2; P.ny[i] = (rnd() - .5) * 2; } }
+        if (metaEl) metaEl.textContent = "Denoising step " + Math.max(1, Math.round(p * 30)) + " of 30";
       }
-      if (mode === "d2" && !REDUCE && now - lastBoil > 83) { lastBoil = now; boil++; }
-      if (mode === "code" && !REDUCE) for (let k = 0; k < 6; k++) glyphs[(rnd() * glyphs.length) | 0] = GLYPHS[(rnd() * GLYPHS.length) | 0];
+      if (ctrl.mode === "d2" && !REDUCE && now - lastBoil > 83) { lastBoil = now; boil++; }
+      if (ctrl.mode === "d2" && metaEl) metaEl.textContent = "Line boil at 12 fps";
+      if (ctrl.mode === "d3" && metaEl) metaEl.textContent = "Normal pass";
+      if (ctrl.mode === "code") {
+        if (metaEl) metaEl.textContent = (cells.length / 2).toLocaleString() + " characters";
+        if (!REDUCE) for (let k = 0; k < 6; k++) glyphs[(rnd() * glyphs.length) | 0] = GLYPHS[(rnd() * GLYPHS.length) | 0];
+      }
 
       const ry = REDUCE ? -.35 : Math.sin(now / 1700) * .5 + tiltY * .5;
       const rx = REDUCE ? .08 : Math.sin(now / 2600) * .12 + tiltX * .3;
       const cyR = Math.cos(ry), syR = Math.sin(ry), cxR = Math.cos(rx), sxR = Math.sin(rx);
 
       const codeFont = Math.max(8, 5.2 * u * .95);
-      if (mode === "code") { ctx!.font = "600 " + codeFont + "px ui-monospace, Menlo, Consolas, monospace"; ctx!.textAlign = "center"; ctx!.textBaseline = "middle"; }
+      if (ctrl.mode === "code") { ctx!.font = "600 " + codeFont + "px ui-monospace, Menlo, Consolas, monospace"; ctx!.textAlign = "center"; ctx!.textBaseline = "middle"; }
 
       const nCells = cells.length / 2;
       for (let i = 0; i < N; i++) {
         let tx: number, ty: number, tr: number, tg: number, tb: number, ta = 1, size = 2;
-        if (mode === "ai") {
+        if (ctrl.mode === "ai") {
           const sx = T.fill[i * 2], sy = T.fill[i * 2 + 1];
           tx = cx + (sx - 100 + P.nx[i] * aiAmp) * u; ty = cy + (sy - 100 + P.ny[i] * aiAmp) * u;
           const t = Math.min(1, Math.max(0, sy / 200 * .9 + P.seed[i] * .35 - .1));
@@ -202,12 +221,12 @@ export function WolfCanvas({ onModeChange }: { onModeChange?: (mode: string) => 
           else { c0 = PAL[0]; c1 = PAL[1]; m = (t - .5) * 2; }
           tr = c0[0] + (c1[0] - c0[0]) * m; tg = c0[1] + (c1[1] - c0[1]) * m; tb = c0[2] + (c1[2] - c0[2]) * m;
           size = 2.6;
-        } else if (mode === "code") {
+        } else if (ctrl.mode === "code") {
           const c = i % nCells;
           tx = cx + (cells[c * 2] - 100) * u; ty = cy + (cells[c * 2 + 1] - 100) * u;
           ta = i < nCells ? 1 : 0; tr = 63; tg = 224; tb = 197;
           if (glyphs[c] === "<" || glyphs[c] === ">") { tr = 241; tg = 240; tb = 236; }
-        } else if (mode === "d2") {
+        } else if (ctrl.mode === "d2") {
           let sx = T.lines[i * 2], sy = T.lines[i * 2 + 1];
           const h = Math.sin(P.seed[i] * 999 + boil * 12.9898) * 43758.5453;
           const j = (h - Math.floor(h)) - .5, j2 = (Math.sin(P.seed[i] * 777 + boil * 78.233) * 12543.1) % 1;
@@ -231,7 +250,7 @@ export function WolfCanvas({ onModeChange }: { onModeChange?: (mode: string) => 
         }
 
         const go = el > P.delay[i] || REDUCE;
-        const k = REDUCE ? 1 : (go ? (mode === "ai" ? .22 : .1) : 0);
+        const k = REDUCE ? 1 : (go ? (ctrl.mode === "ai" ? .22 : .1) : 0);
         P.x[i] += (tx - P.x[i]) * k; P.y[i] += (ty - P.y[i]) * k;
         P.r[i] += (tr - P.r[i]) * .12; P.g[i] += (tg - P.g[i]) * .12; P.b[i] += (tb - P.b[i]) * .12;
         P.a[i] += (ta - P.a[i]) * .12;
@@ -245,8 +264,8 @@ export function WolfCanvas({ onModeChange }: { onModeChange?: (mode: string) => 
         const X = P.x[i] + P.ox[i], Y = P.y[i] + P.oy[i];
         ctx!.globalAlpha = P.a[i];
         ctx!.fillStyle = "rgb(" + (P.r[i] | 0) + "," + (P.g[i] | 0) + "," + (P.b[i] | 0) + ")";
-        if (mode === "code" && i < nCells) ctx!.fillText(glyphs[i], X, Y);
-        else if (mode !== "code") ctx!.fillRect(X - size / 2, Y - size / 2, size, size);
+        if (ctrl.mode === "code" && i < nCells) ctx!.fillText(glyphs[i], X, Y);
+        else if (ctrl.mode !== "code") ctx!.fillRect(X - size / 2, Y - size / 2, size, size);
       }
       ctx!.globalAlpha = 1;
     }
@@ -268,10 +287,11 @@ export function WolfCanvas({ onModeChange }: { onModeChange?: (mode: string) => 
 
     stateRef.current = {
       N, P, T, cells, glyphs, W, H: Hh, dpr, sc, cx, cy,
-      mode, modeStart, paused, boil, lastBoil, lastStep,
+      ctrl, setMode, getMode: () => ctrl.mode, boil, lastBoil, lastStep,
       mx, my, tiltX, tiltY, visible, animId: 0,
       destroy() {
         cancelAnimationFrame(stateRef.current?.animId ?? 0);
+        if (setModeRef) setModeRef.current = null;
         observer.disconnect();
         canvas.removeEventListener("pointermove", onPointerMove);
         canvas.removeEventListener("pointerleave", onPointerLeave);
@@ -287,6 +307,13 @@ export function WolfCanvas({ onModeChange }: { onModeChange?: (mode: string) => 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!modeProp) return;
+    const s = stateRef.current;
+    if (s && s.getMode() !== modeProp) s.setMode(modeProp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modeProp]);
 
   return <canvas ref={canvasRef} width={850} height={678} />;
 }

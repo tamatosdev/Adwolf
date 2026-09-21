@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { WolfCanvas } from "./WolfCanvas";
 
@@ -9,6 +9,13 @@ const modeWords: Record<string, string> = {
   code: "Coded.",
   d2: "Drawn.",
   d3: "Rendered.",
+};
+
+const modeDurs: Record<string, string> = {
+  ai: "5200ms",
+  code: "4600ms",
+  d2: "4600ms",
+  d3: "6200ms",
 };
 
 const modeLabels = [
@@ -20,8 +27,14 @@ const modeLabels = [
 
 export function HeroSection() {
   const [mode, setMode] = useState("ai");
+  const wolfSetMode = useRef<((m: string) => void) | null>(null);
 
   const handleModeChange = useCallback((m: string) => {
+    setMode(m);
+  }, []);
+
+  const handleModeClick = useCallback((m: string) => {
+    wolfSetMode.current?.(m);
     setMode(m);
   }, []);
 
@@ -45,8 +58,8 @@ export function HeroSection() {
                 type="button"
                 data-mode={m.key}
                 aria-pressed={mode === m.key}
-                style={{ "--dur": "5200ms" } as React.CSSProperties}
-                onClick={() => handleModeChange(m.key)}
+                style={{ "--dur": modeDurs[m.key] } as React.CSSProperties}
+                onClick={() => handleModeClick(m.key)}
               >
                 {m.label}
               </button>
@@ -62,10 +75,8 @@ export function HeroSection() {
           </div>
         </div>
         <div className="stage" aria-hidden="true">
-          <WolfCanvas onModeChange={handleModeChange} />
-          <span className="mode-meta" id="modeMeta">
-            {mode === "ai" ? "Denoising step 30 of 30" : ""}
-          </span>
+          <WolfCanvas mode={mode} onModeChange={handleModeChange} setModeRef={wolfSetMode} />
+          <span className="mode-meta" id="modeMeta" />
         </div>
       </div>
     </section>
