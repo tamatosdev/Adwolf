@@ -60,7 +60,7 @@ export function Header() {
   }
 
   return (
-    <header className={`nav${solid || pathname === "/" ? " solid" : ""}${open ? " open" : ""}`} id="nav">
+    <header className={`nav${solid ? " solid" : ""}${open ? " open" : ""}`} id="nav">
       <div className="wrap">
         <Link href="/" aria-label="Adwolf home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
