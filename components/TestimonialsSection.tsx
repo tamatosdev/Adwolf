@@ -1,10 +1,16 @@
 "use client";
 
-const quotes = [
-  { dataC: "ai", slot: "Add a poster frame", name: "Client name", title: "Title, Company", line: "Add a one-line pull quote from the video." },
-  { dataC: "d3", slot: "Add a poster frame", name: "Client name", title: "Title, Company", line: "Add a one-line pull quote from the video." },
-  { dataC: "code", slot: "Add a poster frame", name: "Client name", title: "Title, Company", line: "Add a one-line pull quote from the video." },
-];
+import Image from "next/image";
+import { clients, type Client } from "@/data/clients";
+
+const accents = ["ai", "d3", "code"];
+
+function initials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0][0].toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
 
 function PlayIcon() {
   return (
@@ -14,11 +20,56 @@ function PlayIcon() {
   );
 }
 
-export function TestimonialsSection() {
-  function openModal(dataVideo: string, vertical: boolean) {
-    window.postMessage({ type: "open-video-modal", url: dataVideo, vertical }, "*");
+function ClientCard({ client, accent, index }: { client: Client; accent: string; index: number }) {
+  const hasVideo = Boolean(client.videoUrl);
+  const subtitle = [client.role, client.company, client.location].filter(Boolean).join(", ");
+
+  const inner = (
+    <>
+      <div className={`media grid-bg${hasVideo ? " tall" : ""}`} data-c={accent}>
+        {client.poster ? (
+          <Image
+            src={client.poster}
+            alt={client.name}
+            fill
+            sizes="(max-width:560px) 100vw, (max-width:900px) 50vw, 33vw"
+            priority={index < 3}
+          />
+        ) : (
+          <span className="avatar" aria-hidden="true">
+            {initials(client.name)}
+          </span>
+        )}
+        {hasVideo && (
+          <span className="play">
+            <PlayIcon />
+          </span>
+        )}
+      </div>
+      <span className="who">
+        <b>{client.name}</b>
+        <span>{subtitle}</span>
+      </span>
+      {client.quote && <span className="line">{client.quote}</span>}
+    </>
+  );
+
+  if (hasVideo) {
+    return (
+      <button
+        className="quote has-video"
+        type="button"
+        onClick={() => window.postMessage({ type: "open-video-modal", url: client.videoUrl, vertical: false }, "*")}
+      >
+        {inner}
+      </button>
+    );
   }
 
+  return <div className="quote">{inner}</div>;
+}
+
+export function TestimonialsSection() {
   return (
     <section className="sec tight" aria-labelledby="quotes-h">
       <div className="wrap">
@@ -27,23 +78,8 @@ export function TestimonialsSection() {
           <p>No anonymous quotes. Real clients, in their own words.</p>
         </div>
         <div className="quotes">
-          {quotes.map((q, i) => (
-            <button
-              key={i}
-              className="quote"
-              type="button"
-              onClick={() => openModal("", false)}
-            >
-              <div className="media grid-bg" data-c={q.dataC}>
-                <span className="slot">{q.slot}</span>
-                <span className="play"><PlayIcon /></span>
-              </div>
-              <span className="who">
-                <b>{q.name}</b>
-                <span>{q.title}</span>
-              </span>
-              <span className="line">{q.line}</span>
-            </button>
+          {clients.map((c, i) => (
+            <ClientCard key={c.name} client={c} accent={accents[i % accents.length]} index={i} />
           ))}
         </div>
       </div>

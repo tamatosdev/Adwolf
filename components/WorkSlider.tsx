@@ -2,13 +2,14 @@
 
 import { useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { projects, accentFor, labelFor } from "@/data/work";
 
-const slides = [
-  { href: "/work/mod-girl-ai-tvc/", dataC: "ai", slot: "Add a still or clip", alt: "Mod Girl", title: "A TV ad with zero shoot days", client: "Mod Girl", tag: "AI video", tagClass: "ai" },
-  { href: "/work/cgi-product-film/", dataC: "d3", slot: "Add a still or clip", alt: "Add client", title: "Your strongest CGI project", client: "Add client", tag: "3D and CGI", tagClass: "d3" },
-  { href: "/work/insignia-properties/", dataC: "d2", slot: "Add a still or clip", alt: "Insignia Properties", title: "Luxury real estate, rebuilt for Meta", client: "Insignia Properties", tag: "2D and motion", tagClass: "d2" },
-  { href: "/work/retail-odoo-erp/", dataC: "code", slot: "Add a still or clip", alt: "US retailer", title: "One back office for a growing retailer", client: "US retailer", tag: "Software", tagClass: "code" },
-];
+const featuredSlugs = ["costa", "ihop", "himalaya", "a47"];
+
+const slides = featuredSlugs
+  .map((s) => projects.find((p) => p.slug === s))
+  .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
 export function WorkSlider() {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -35,16 +36,21 @@ export function WorkSlider() {
         </div>
       </div>
       <div className="slider" ref={trackRef} tabIndex={0} aria-label="Selected projects">
-        {slides.map((s) => (
-          <Link className="slide" key={s.href} href={s.href}>
-            <div className="media grid-bg" data-c={s.dataC}>
-              <span className="slot">{s.slot}</span>
+        {slides.map((p) => (
+          <Link className="slide" key={p.slug} href={`/work/${p.slug}/`}>
+            <div className="media grid-bg" data-c={accentFor(p)}>
+              <Image
+                src={p.cover.src}
+                alt={`${p.client} – ${p.tagline}`}
+                fill
+                sizes="(max-width:900px) 100vw, 44vw"
+              />
             </div>
             <div className="cap">
-              <h3 className="cond">{s.title}</h3>
+              <h3 className="cond">{p.tagline}</h3>
               <span className="meta">
-                <b>{s.client}</b>
-                <span className={`tag ${s.tagClass}`}>{s.tag}</span>
+                <b>{p.client}</b>
+                <span className={`tag ${accentFor(p)}`}>{labelFor(p.categories[0])}</span>
               </span>
             </div>
           </Link>
