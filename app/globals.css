@@ -166,10 +166,10 @@ a:hover > .media > *{transform:scale(1.035)}
 .quote .play{position:absolute;left:16px;bottom:18px;width:58px;height:58px;border-radius:50%;background:var(--clay);color:var(--char);display:grid;place-items:center;z-index:2;transition:transform .25s}
 .quote.has-video:hover .play{transform:scale(1.08)}
 .quote .play svg{width:20px;height:20px;margin-left:3px}
-.quote .who{margin-top:14px}
+.quote .who{display:block;margin-top:14px;padding:0 8px}
 .quote .who b{display:block;font-size:1.15rem}
 .quote .who span{color:var(--muted);font-size:.95rem}
-.quote .line{display:block;margin-top:10px;font-size:1.05rem;line-height:1.4}
+.quote .line{display:block;margin-top:10px;padding:0 8px;font-size:1.05rem;line-height:1.4}
 @media (max-width:900px){.quotes{grid-template-columns:repeat(2,minmax(0,1fr))}.quote .media.tall{aspect-ratio:16/11}}
 @media (max-width:560px){.quotes{grid-template-columns:1fr}}
 .modal{position:fixed;inset:0;z-index:90;background:rgba(10,11,13,.92);display:none;place-items:center;padding:24px}
