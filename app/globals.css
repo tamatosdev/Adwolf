@@ -109,11 +109,17 @@ button{font:inherit}
 .statement .w.on.last{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 
 .slider-wrap{position:relative}
-.slider{display:flex;gap:clamp(14px,2vw,28px);overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-left:var(--pad);padding:0 var(--pad) 12px;scrollbar-width:none;cursor:grab}
+.slider{display:flex;gap:clamp(14px,2vw,28px);overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-left:var(--pad);padding:0 var(--pad) 1.5rem;scrollbar-width:none;cursor:grab}
 .slider::-webkit-scrollbar{display:none}
 .slider.dragging{cursor:grabbing;scroll-snap-type:none}
-.slide{flex:0 0 clamp(290px,44vw,720px);scroll-snap-align:start;text-decoration:none;color:inherit}
-.slide .media{aspect-ratio:16/10}
+.slide{flex:0 0 auto;width:clamp(240px,24vw,340px);scroll-snap-align:start;text-decoration:none;color:inherit;padding-bottom:1.5rem}
+.slide .media{aspect-ratio:1}
+.slide .media.tp>img{object-position:50% 0}
+.slide .cap{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;min-width:0}
+.slide .cap h3{margin:0;font-size:clamp(1.25rem,1.7vw,1.6rem);line-height:1.15;min-height:3.45em}
+.slide .cap .meta{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-top:0.6rem;width:100%}
+@media (max-width:900px){.slide{width:clamp(220px,42vw,320px)}}
+@media (max-width:600px){.slide{width:min(72vw,300px)}}
 .slider-ctrl{display:flex;gap:8px}
 .icon-btn{width:48px;height:48px;border-radius:50%;border:0;background:var(--char-2);color:var(--clay);cursor:pointer;display:grid;place-items:center}
 .icon-btn:hover{background:var(--vp)}

@@ -38,12 +38,15 @@ export function WorkSlider() {
       <div className="slider" ref={trackRef} tabIndex={0} aria-label="Selected projects">
         {slides.map((p) => (
           <Link className="slide" key={p.slug} href={`/work/${p.slug}/`}>
-            <div className="media grid-bg" data-c={accentFor(p)}>
+            <div
+              className={`media grid-bg${p.categories.includes("web-development") ? " tp" : ""}`}
+              data-c={accentFor(p)}
+            >
               <Image
                 src={p.cover.src}
                 alt={`${p.client} – ${p.tagline}`}
                 fill
-                sizes="(max-width:900px) 100vw, 44vw"
+                sizes="(max-width:600px) 72vw, (max-width:900px) 42vw, 340px"
               />
             </div>
             <div className="cap">
